@@ -75,6 +75,18 @@ public:
     void Behavior();
 };
 
+
+class ProductExpedition : public Process {
+public:
+    unsigned int Load;
+
+    // Konstruktor s explicitním zadáním zatížení
+    explicit ProductExpedition(unsigned int load);
+
+    // Chování procesu
+    void Behavior();
+};
+
 #define IMS_MAIN_H
 
 #endif //IMS_MAIN_H

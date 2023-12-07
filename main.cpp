@@ -33,14 +33,14 @@ Store MeatAgingFridge("Lednice pro zrani", 3500);
 Store ProductFridge("Lednice pro hotove produkty", 5000);
 
 int n = 50;
-
+int finalProduct = 0;
 
 
 
 MeatStacking::MeatStacking(unsigned int intake) {
     Intake = intake;
     Activate();
-    Priority = 1;
+    Priority = 2;
 }
 
 void MeatStacking::Behavior() {
@@ -68,7 +68,7 @@ void MeatStacking::Behavior() {
 MeatPreparation::MeatPreparation(unsigned int load) {
     Load = load;
     Activate();
-    Priority = 2;
+    Priority = 3;
 }
 
 void MeatPreparation::Behavior()
@@ -86,13 +86,13 @@ void MeatPreparation::Behavior()
     Wait(2*60*60*24);
 
     dobaVSystemu(Time - tvstup);
-    // TODO: Cutter
+    (new ProductCreation(Load))->Activate();
 }
 
 ProductPackaging::ProductPackaging(unsigned int load) {
     Load = load;
     Activate();
-    Priority = 4;
+    Priority = 5;
 }
 
 void ProductPackaging::Behavior()
@@ -108,8 +108,32 @@ void ProductPackaging::Behavior()
 
     //TODO: Expedition process
     dobaVSystemu(Time - tvstup);
+    (new ProductExpedition(Load*0.8))->Activate();
+}
+
+ProductExpedition::ProductExpedition(unsigned int load) {
+    Load = load;
+    Activate();
+    Priority = 1;
+}
+
+void ProductExpedition::Behavior()
+{
+    double tvstup = Time;
+    double obsluha;
+    Wait(Uniform(12*60*60, 72*60*60));
+    Seize(Butcher);
+    Wait(40*60);
+
+
+    Release(Butcher);
+    finalProduct += Load;
+    ProductFridge.Leave(ProductFridge.Used());
+    //TODO: Expedition process
+    dobaVSystemu(Time - tvstup);
 
 }
+
 
 class Generator: public Event{
 public:
@@ -130,7 +154,7 @@ ProductCreation::ProductCreation(unsigned int load) {
     Load = load;
     FinalLoad = 0;
     Activate();
-    Priority = 3;
+    Priority = 4;
 }
 
 void ProductCreation::Behavior() {
@@ -200,7 +224,7 @@ void ProductCreation::Behavior() {
     Release(SmokeHouse);
     if (SmokeHouseQueue.Length() > 0)
         SmokeHouseQueue.GetFirst()->Activate();
-
+    (new ProductPackaging(Load))->Activate();
 }
 
 int main(int argc, char *argv[]) {
@@ -256,7 +280,7 @@ int main(int argc, char *argv[]) {
     MeatIntakeFridge.Output();
     MeatAgingFridge.Output();
     ProductFridge.Output();
-
+    Print(finalProduct);
 
   return 0;
 }
