@@ -19,11 +19,11 @@ struct ProgramOptions {
     unsigned int ProductFridgeUsage = 10;
 };
 
-class MealStacking : public Process {
+class MeatStacking : public Process {
 public:
     unsigned int Intake;
 
-    explicit MealStacking(unsigned int intake);
+    explicit MeatStacking(unsigned int intake);
 
     void Behavior();
 };
