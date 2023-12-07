@@ -24,8 +24,3 @@ $(TARGET): $(OBJECTS) $(HEADERFILES)
 
 clean:
 	rm -f $(OBJECTS) $(TARGET)
-
-run:
-	./dns
-test:
-	python3 test.py
