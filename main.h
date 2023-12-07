@@ -11,12 +11,23 @@ struct ProgramOptions {
     unsigned int Cutter = 1;
     unsigned int CutterCapacity = 25;
     unsigned int SmokeHouse = 1;
+    unsigned int SmokeHouseCapacity = 80;
     unsigned int MeatAgingFridge = 3500;
     unsigned int MeatAgingFridgeUsage = 10;
     unsigned int MeatIntakeFridge = 5000;
     unsigned int MeatIntakeFridgeUsage = 10;
     unsigned int ProductFridge = 5000;
     unsigned int ProductFridgeUsage = 10;
+};
+
+struct MachinesTiming {
+    // in minutes
+    unsigned int Cutter = 12;
+    int SmokeHouse[2] = {72, 165};
+};
+
+struct SimulationParams {
+    unsigned int product = 0;
 };
 
 class MealStacking : public Process {
@@ -34,6 +45,18 @@ public:
 
     // Konstruktor s explicitním zadáním zatížení
     explicit MeatPreparation(unsigned int load);
+
+    // Chování procesu
+    void Behavior();
+};
+
+class ProductCreation : public Process {
+public:
+    unsigned int Load;
+    unsigned int FinalLoad;
+
+    // Konstruktor s explicitním zadáním zatížení
+    explicit ProductCreation(unsigned int load);
 
     // Chování procesu
     void Behavior();

@@ -6,6 +6,10 @@
 #include "main.h"
 #include <getopt.h>
 
+MachinesTiming Timing;
+ProgramOptions Options;
+SimulationParams SimParams;
+
 Stat dobaObsluhy("Doba obsluhy na lince");
 Stat dobaObsluhy2("Doba obsluhy na lince2");
 Histogram dobaVSystemu("Celkova doba v systemu", 0, 40, 2);
@@ -90,33 +94,116 @@ void MeatPreparation::Behavior() {
 
 }
 
+ProductCreation::ProductCreation(unsigned int load) {
+    Load = load;
+    FinalLoad = 0;
+    Activate();
+}
+
+void ProductCreation::Behavior() {
+    double StartTime = Time;
+    double Service;
+
+    repeat:
+    if (Butcher.Busy()) {
+        Into(ButcherQueue);
+        Passivate();
+        goto repeat;
+    }
+    Seize(Butcher, 3);
+
+    Enter(ProductFridge, Load);
+
+    repeatCutter:
+    if (Cutter.Busy()) {
+        Into(CutterQueue);
+        Passivate();
+        goto repeatCutter;
+    }
+    Seize(Cutter);
+
+    unsigned int CutteredMeat = 0;
+    while (CutteredMeat < Load) {
+        Wait(Timing.Cutter);
+        CutteredMeat += (Options.CutterCapacity < (Load - CutteredMeat)) ?
+                Options.CutterCapacity :
+                (Load - CutteredMeat);
+    }
+    Release(Cutter);
+    if (CutterQueue.Length() > 0)
+        CutterQueue.GetFirst()->Activate();
+
+    repeatFiller:
+    if (SausageFiller.Busy()) {
+        Into(SausageFillerQueue);
+        Passivate();
+        goto repeatFiller;
+    }
+    // narazka parku
+    Seize(SausageFiller);
+
+    Wait(CutteredMeat * 48);
+
+    Release(SausageFiller);
+    if (SausageFillerQueue.Length() > 0)
+        SausageFillerQueue.GetFirst()->Activate();
+
+    // skladani do kose do udirny
+    Wait(CutteredMeat * 0.05);
+
+    repeatSmoke:
+    if (SmokeHouse.Busy()){
+        Into(SmokeHouseQueue);
+        Passivate();
+        goto repeatSmoke;
+    }
+    Seize(SmokeHouse);
+
+    Release(Butcher);
+    if (ButcherQueue.Length() > 0)
+        ButcherQueue.GetFirst()->Activate();
+
+    unsigned int SmokedMeat = 0;
+    while (CutteredMeat > SmokedMeat) {
+        // uzeni
+        Wait(Uniform(Timing.SmokeHouse[0],Timing.SmokeHouse[1]));
+        SmokedMeat += (Options.SmokeHouseCapacity < (Load - SmokedMeat)) ?
+                        Options.SmokeHouseCapacity :
+                        (Load - SmokedMeat);
+    }
+
+    Release(SmokeHouse);
+    if (SmokeHouseQueue.Length() > 0)
+        SmokeHouseQueue.GetFirst()->Activate();
+
+}
+
 int main(int argc, char *argv[]) {
     int c;
-    ProgramOptions input;
 
     // Zpracování vstupních přepínačů a argumentů při spuštění
     while ((c = getopt(argc, argv, "b:c:t:s:a:i:p:")) != -1) {
         switch (c) {
             case 'b':
-                input.Butchers = std::stoi(optarg);
+                Options.Butchers = std::stoi(optarg);
                 break;
             case 'c':
-                input.Cutter = std::stoi(optarg);
+                Options.Cutter = std::stoi(optarg);
                 break;
             case 't':
-                input.CutterCapacity = std::stoi(optarg);
+                Options.CutterCapacity = std::stoi(optarg);
                 break;
             case 's':
-                input.SmokeHouse = std::stoi(optarg);
+                Options.SmokeHouse = std::stoi(optarg);
                 break;
             case 'a':
-                input.MeatAgingFridge = std::stoi(optarg);
+                Options.MeatAgingFridge = std::stoi(optarg);
                 break;
             case 'i':
-                input.MeatIntakeFridge = std::stoi(optarg);
+                Options.MeatIntakeFridge = std::stoi(optarg);
                 break;
             case 'p':
-                input.ProductFridge = std::stoi(optarg);
+                Options.ProductFridge = std::stoi(optarg);
                 break;
             default:
                 abort();
