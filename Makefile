@@ -24,3 +24,6 @@ $(TARGET): $(OBJECTS) $(HEADERFILES)
 
 clean:
 	rm -f $(OBJECTS) $(TARGET)
+
+run:
+	./$(TARGET)
