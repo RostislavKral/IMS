@@ -56,7 +56,7 @@ void MeatStacking::Behavior() {
         goto test;
     }
     Seize(Butcher);
-    Wait(10);
+    Wait(10*60);
 
     dobaObsluhy2(obsluha);
 
@@ -75,7 +75,66 @@ MeatPreparation::MeatPreparation(unsigned int load) {
     Activate();
 }
 
-void MeatPreparation::Behavior() {
+void MeatPreparation::Behavior() 
+{
+     double tvstup = Time;
+    double obsluha;
+
+    Enter(MeatAgingFridge, Load);
+
+    aging:
+    if(Butcher.Busy())
+    {
+      Into(ButcherQueue);
+      Passivate();
+      goto aging;
+    }
+
+    Seize(Butcher, 2);
+    Wait(Exponential(30*60));
+    Wait(20*60);
+    Release(Butcher);
+
+    if (ButcherQueue.Length() > 0) {
+        ButcherQueue.GetFirst()->Activate();
+    }
+
+    Wait(2*60*60*24);
+
+    dobaVSystemu(Time - tvstup);
+    // TODO: Cutter
+}
+
+ProductPackaging::ProductPackaging(unsigned int load) {
+    Load = load;
+    Activate();
+}
+
+void ProductPackaging::Behavior() 
+{
+      double tvstup = Time;
+    double obsluha;
+  packaging:
+  if(Butcher.Busy())
+    {
+      Into(ButcherQueue);
+      Passivate();
+      goto packaging;
+    }
+
+    Seize(Butcher, 4);
+    Wait(30*60);
+    Wait(0.8*Load*1.2*60);
+
+
+    Release(Butcher);
+
+    if (ButcherQueue.Length() > 0) {
+        ButcherQueue.GetFirst()->Activate();
+    }
+
+    //TODO: Expedition process    
+    dobaVSystemu(Time - tvstup);
 
 }
 
@@ -130,7 +189,7 @@ int main(int argc, char *argv[]) {
         }
     }
 
-  Init(0,10000);
+  Init(0,8*60*60);
    /* (new MeatStacking(40))->Activate();
         (new MeatStacking(40))->Activate();*/
 
@@ -143,6 +202,7 @@ int main(int argc, char *argv[]) {
     Butcher.Output();
     ButcherQueue.Output();
     MeatIntakeFridge.Output();
+    MeatAgingFridge.Output();
 
 
   return 0;

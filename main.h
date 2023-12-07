@@ -17,6 +17,8 @@ struct ProgramOptions {
     unsigned int MeatIntakeFridgeUsage = 10;
     unsigned int ProductFridge = 5000;
     unsigned int ProductFridgeUsage = 10;
+    unsigned int ProductQuantity = 40;
+    unsigned int Batch = 40;
 };
 
 class MeatStacking : public Process {
@@ -34,6 +36,17 @@ public:
 
     // Konstruktor s explicitním zadáním zatížení
     explicit MeatPreparation(unsigned int load);
+
+    // Chování procesu
+    void Behavior();
+};
+
+class ProductPackaging : public Process {
+public:
+    unsigned int Load;
+
+    // Konstruktor s explicitním zadáním zatížení
+    explicit ProductPackaging(unsigned int load);
 
     // Chování procesu
     void Behavior();
