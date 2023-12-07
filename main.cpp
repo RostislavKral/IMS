@@ -36,7 +36,7 @@ class Generator:public Event{
 
     void Behavior()
     {
-        auto meat = new Meat();
+        auto meat = new MealStacking(40);
 
 
         meat->Activate(Exponential(11));
