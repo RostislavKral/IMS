@@ -1,4 +1,6 @@
 #include <simlib.h>
+#include "main.h"
+#include <getopt.h>
 
 // global objects:
 Facility  Box("Box");
@@ -22,7 +24,17 @@ class Generator : public Event {  // model of system's input
   }
 };
 
-int main() {                 // experiment description
+int main(int argc, char *argv[]) {                 // experiment description
+    int c;
+    ProgramOptions input;
+
+    // Zpracování vstupních přepínačů a argumentů při spuštění
+    while ((c = getopt(argc, argv, "hrx6s:p:")) != -1) {
+        switch (c) {
+            default:
+                abort();
+        }
+    }
   Print(" model2 - SIMLIB/C++ example\n");
   SetOutput("model2.out");
   Init(0,1000);              // experiment initialization for time 0..1000
