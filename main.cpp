@@ -64,7 +64,7 @@ MealStacking::MealStacking(unsigned int intake) {
     Activate();
 }
 
-void MealStacking::Behavior() {meal
+void MealStacking::Behavior() {
     double tvstup = Time;
     double obsluha;
 
