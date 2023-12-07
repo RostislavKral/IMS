@@ -18,6 +18,8 @@ struct ProgramOptions {
     unsigned int MeatIntakeFridgeUsage = 10;
     unsigned int ProductFridge = 5000;
     unsigned int ProductFridgeUsage = 10;
+    unsigned int ProductQuantity = 40;
+    unsigned int Batch = 40;
 };
 
 struct MachinesTiming {
@@ -30,11 +32,11 @@ struct SimulationParams {
     unsigned int product = 0;
 };
 
-class MealStacking : public Process {
+class MeatStacking : public Process {
 public:
     unsigned int Intake;
 
-    explicit MealStacking(unsigned int intake);
+    explicit MeatStacking(unsigned int intake);
 
     void Behavior();
 };
@@ -45,6 +47,17 @@ public:
 
     // Konstruktor s explicitním zadáním zatížení
     explicit MeatPreparation(unsigned int load);
+
+    // Chování procesu
+    void Behavior();
+};
+
+class ProductPackaging : public Process {
+public:
+    unsigned int Load;
+
+    // Konstruktor s explicitním zadáním zatížení
+    explicit ProductPackaging(unsigned int load);
 
     // Chování procesu
     void Behavior();

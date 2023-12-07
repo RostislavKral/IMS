@@ -5,6 +5,7 @@
 #include <simlib.h>
 #include "main.h"
 #include <getopt.h>
+#include <vector>
 
 MachinesTiming Timing;
 ProgramOptions Options;
@@ -32,29 +33,17 @@ Store MeatAgingFridge("Lednice pro zrani", 3500);
 
 Store ProductFridge("Lednice pro hotove produkty", 5000);
 
-class Generator:public Event{
-
-    /*Generator::Generator(){
-      // Activate();
-     }*/
-
-    void Behavior()
-    {
-        auto meat = new MealStacking(40);
+int n = 50;
 
 
-        meat->Activate(Exponential(11));
-    }
-
-};
 
 
-MealStacking::MealStacking(unsigned int intake) {
+MeatStacking::MeatStacking(unsigned int intake) {
     Intake = intake;
     Activate();
 }
 
-void MealStacking::Behavior() {
+void MeatStacking::Behavior() {
     double tvstup = Time;
     double obsluha;
 
@@ -71,7 +60,7 @@ void MealStacking::Behavior() {
         goto test;
     }
     Seize(Butcher);
-    Wait(10);
+    Wait(10*60);
 
     dobaObsluhy2(obsluha);
 
@@ -90,9 +79,86 @@ MeatPreparation::MeatPreparation(unsigned int load) {
     Activate();
 }
 
-void MeatPreparation::Behavior() {
+void MeatPreparation::Behavior()
+{
+     double tvstup = Time;
+    double obsluha;
+
+    Enter(MeatAgingFridge, Load);
+
+    aging:
+    if(Butcher.Busy())
+    {
+      Into(ButcherQueue);
+      Passivate();
+      goto aging;
+    }
+
+    Seize(Butcher, 2);
+    Wait(Exponential(30*60));
+    Wait(20*60);
+    Release(Butcher);
+
+    if (ButcherQueue.Length() > 0) {
+        ButcherQueue.GetFirst()->Activate();
+    }
+
+    Wait(2*60*60*24);
+
+    dobaVSystemu(Time - tvstup);
+    // TODO: Cutter
+}
+
+ProductPackaging::ProductPackaging(unsigned int load) {
+    Load = load;
+    Activate();
+}
+
+void ProductPackaging::Behavior()
+{
+      double tvstup = Time;
+    double obsluha;
+  packaging:
+  if(Butcher.Busy())
+    {
+      Into(ButcherQueue);
+      Passivate();
+      goto packaging;
+    }
+
+    Seize(Butcher, 4);
+    Wait(30*60);
+    Wait(0.8*Load*1.2*60);
+
+
+    Release(Butcher);
+
+    if (ButcherQueue.Length() > 0) {
+        ButcherQueue.GetFirst()->Activate();
+    }
+
+    //TODO: Expedition process
+    dobaVSystemu(Time - tvstup);
 
 }
+
+class Generator: public Event{
+public:
+
+  void Behavior()
+  {
+    for(int i = 0; i < n; i++){
+    auto meat = new MeatStacking(40);
+
+
+    meat->Activate(Time);
+    }
+  }
+
+
+};
+
+
 
 ProductCreation::ProductCreation(unsigned int load) {
     Load = load;
@@ -209,8 +275,11 @@ int main(int argc, char *argv[]) {
                 abort();
         }
     }
-    Init(0, 10000);
-    (new MealStacking(40))->Activate();
+
+  Init(0,8*60*60);
+   /* (new MeatStacking(40))->Activate();
+        (new MeatStacking(40))->Activate();*/
+
     (new Generator)->Activate();
     Run();
 
@@ -220,6 +289,8 @@ int main(int argc, char *argv[]) {
     Butcher.Output();
     ButcherQueue.Output();
     MeatIntakeFridge.Output();
+    MeatAgingFridge.Output();
+
 
   return 0;
 }
