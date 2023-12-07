@@ -42,7 +42,6 @@ MeatStacking::MeatStacking(unsigned int intake) {
 void MeatStacking::Behavior() {
     double tvstup = Time;
     double obsluha;
-
     test:
     if (MeatIntakeFridge.Empty()) {
         // Todo wait
@@ -189,7 +188,7 @@ int main(int argc, char *argv[]) {
         }
     }
 
-  Init(0,8*60*60);
+  Init(0,8*60*60*5);
    /* (new MeatStacking(40))->Activate();
         (new MeatStacking(40))->Activate();*/
 
