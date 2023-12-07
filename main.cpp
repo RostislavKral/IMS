@@ -6,20 +6,6 @@
 #include "main.h"
 #include <getopt.h>
 
-
-class Meat: Process {
-
-
-
-};
-
-class Generator: Event {
-
-
-
-};
-
-
 Queue  ButcherQueue("Rada na reznika");
 Facility Butcher("Reznik");
 
@@ -38,6 +24,35 @@ Store MeatIntakeFridge("Lednice pro prijem masa", 5000);
 
 Store ProductFridge("Lednice pro hotove produkty", 5000);
 
+class Meat:public Process {
+
+  void Behavior()
+  {
+    Seize(Butcher);
+    Wait(2.7);
+    Release(Butcher);
+  }
+
+};
+
+class Generator:public Event{
+
+ /*Generator::Generator(){
+   // Activate();
+  }*/
+
+  void Behavior()
+  {
+    auto meat = new Meat();
+
+  
+    meat->Activate(Exponential(11));
+  }
+
+};
+
+
+
 int main(int argc, char *argv[]) {
     int c;
     ProgramOptions input;
@@ -49,10 +64,12 @@ int main(int argc, char *argv[]) {
                 abort();
         }
     }
-  Init(0, 10000);
+  Init(0, 100000);
+  (new Generator)->Activate();
   Run();
 
   ButcherQueue.Output();
+  Butcher.Output();
 
   return 0;
 }
