@@ -1,23 +1,10 @@
 /**
- * @Authors xkralr06 - Rostislav Kral, xjezek19 - Lukas Jezek
+ * Authors xkralr06 - Rostislav Kral, xjezek19 - Lukas Jezek
 */
 
 #include <simlib.h>
 #include "main.h"
 #include <getopt.h>
-
-
-class Meat: Process {
-
-
-
-};
-
-class Generator: Event {
-
-
-
-};
 
 Stat dobaObsluhy("Doba obsluhy na lince");
 Stat dobaObsluhy2("Doba obsluhy na lince2");
@@ -41,21 +28,20 @@ Store MeatAgingFridge("Lednice pro zrani", 3500);
 
 Store ProductFridge("Lednice pro hotove produkty", 5000);
 
-class Test: public Process {
-public:
-    void Behavior () {
-        double tvstup = Time;
-        double obsluha;
+class Generator:public Event{
 
-        Seize(Butcher);
-        Wait(1000);
+    /*Generator::Generator(){
+      // Activate();
+     }*/
 
-        dobaObsluhy(obsluha);
+    void Behavior()
+    {
+        auto meat = new Meat();
 
-        Release(Butcher);
 
-        dobaVSystemu(Time - tvstup);
+        meat->Activate(Exponential(11));
     }
+
 };
 
 
@@ -138,6 +124,7 @@ int main(int argc, char *argv[]) {
     }
     Init(0, 10000);
     (new MealStacking(40))->Activate();
+    (new Generator)->Activate();
     Run();
 
     dobaObsluhy.Output();
@@ -147,5 +134,5 @@ int main(int argc, char *argv[]) {
     ButcherQueue.Output();
     MeatIntakeFridge.Output();
 
-    return 0;
+  return 0;
 }
