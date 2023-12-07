@@ -1,34 +1,49 @@
+/**
+ * Authors xkralr06 - Rostislav Kral, xjezek19 - Lukas Jezek
+*/
+
 #include <simlib.h>
+#include <getopt.h>
 
-// global objects:
-Facility  Box("Box");
-Histogram Table("Table",0,25,20);
 
-class Customer : public Process { 
-  double Prichod;                 // atribute of each customer
-  void Behavior() {               // --- behavoir specification ---
-    Prichod = Time;               // incoming time
-    Seize(Box);                   // start of service
-    Wait(10);                     // time of service
-    Release(Box);                 // end of service
-    Table(Time-Prichod);          // waiting and service time
-  }
+
+class Meat: Process {
+
+
+
 };
 
-class Generator : public Event {  // model of system's input
-  void Behavior() {               // --- behavior specification ---
-    (new Customer)->Activate();   // new customer
-    Activate(Time+Exponential(1e3/150));  //
-  }
+class Generator: Event {
+  
+
+
 };
 
-int main() {                 // experiment description
-  Print(" model2 - SIMLIB/C++ example\n");
-  SetOutput("model2.out");
-  Init(0,1000);              // experiment initialization for time 0..1000
-  (new Generator)->Activate(); // customer generator
-  Run();                     // simulation
-  Box.Output();              // print of results
-  Table.Output();
+
+Queue  ButcherQueue("Rada na reznika");
+Facility Butcher("Reznik");
+
+Queue CutterQueue("Fronta na kutr");
+Facility Cutter("Kutr");
+
+Queue SmokeHouseQueue("Fronty na udirnu");
+Facility SmokeHouse("Udirna");
+
+Queue SausageFillerQueue("Fronta na narazecku");
+Facility SausageFiller("Narazecka");
+
+Store MeatAgingFridge("Lednice pro zrani", 3500);
+
+Store MeatIntakeFridge("Lednice pro prijem masa", 5000);
+
+Store ProductFridge("Lednice pro hotove produkty", 5000);
+
+int main() {  
+
+  Init(0, 10000);
+  Run();
+
+  ButcherQueue.Output();
+
   return 0;
 }
