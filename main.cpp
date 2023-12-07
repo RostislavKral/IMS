@@ -15,7 +15,6 @@ Stat dobaObsluhy("Doba obsluhy na lince");
 Stat dobaObsluhy2("Doba obsluhy na lince2");
 Histogram dobaVSystemu("Celkova doba v systemu", 0, 40, 2);
 
-Queue  ButcherQueue("Rada na reznika");
 Facility Butcher("Reznik");
 
 Queue CutterQueue("Fronta na kutr");
@@ -41,6 +40,7 @@ int n = 50;
 MeatStacking::MeatStacking(unsigned int intake) {
     Intake = intake;
     Activate();
+    Priority = 1;
 }
 
 void MeatStacking::Behavior() {
@@ -53,20 +53,12 @@ void MeatStacking::Behavior() {
     }
     Enter(MeatIntakeFridge, Intake);
 
-    if (Butcher.Busy()) {
-        Into(ButcherQueue);
-        Passivate();
-        goto test;
-    }
     Seize(Butcher);
     Wait(10*60);
 
     dobaObsluhy2(obsluha);
 
     Release(Butcher);
-    if (ButcherQueue.Length() > 0) {
-        ButcherQueue.GetFirst()->Activate();
-    }
 
     ((new MeatPreparation(Intake))->Activate());
 
@@ -76,6 +68,7 @@ void MeatStacking::Behavior() {
 MeatPreparation::MeatPreparation(unsigned int load) {
     Load = load;
     Activate();
+    Priority = 2;
 }
 
 void MeatPreparation::Behavior()
@@ -85,22 +78,10 @@ void MeatPreparation::Behavior()
 
     Enter(MeatAgingFridge, Load);
 
-    aging:
-    if(Butcher.Busy())
-    {
-      Into(ButcherQueue);
-      Passivate();
-      goto aging;
-    }
-
-    Seize(Butcher, 2);
+    Seize(Butcher);
     Wait(Exponential(30*60));
     Wait(20*60);
     Release(Butcher);
-
-    if (ButcherQueue.Length() > 0) {
-        ButcherQueue.GetFirst()->Activate();
-    }
 
     Wait(2*60*60*24);
 
@@ -111,30 +92,19 @@ void MeatPreparation::Behavior()
 ProductPackaging::ProductPackaging(unsigned int load) {
     Load = load;
     Activate();
+    Priority = 4;
 }
 
 void ProductPackaging::Behavior()
 {
-      double tvstup = Time;
+    double tvstup = Time;
     double obsluha;
-  packaging:
-  if(Butcher.Busy())
-    {
-      Into(ButcherQueue);
-      Passivate();
-      goto packaging;
-    }
-
-    Seize(Butcher, 4);
+    Seize(Butcher);
     Wait(30*60);
     Wait(0.8*Load*1.2*60);
 
 
     Release(Butcher);
-
-    if (ButcherQueue.Length() > 0) {
-        ButcherQueue.GetFirst()->Activate();
-    }
 
     //TODO: Expedition process
     dobaVSystemu(Time - tvstup);
@@ -153,29 +123,21 @@ public:
     meat->Activate(Time);
     }
   }
-
-
 };
-
 
 
 ProductCreation::ProductCreation(unsigned int load) {
     Load = load;
     FinalLoad = 0;
     Activate();
+    Priority = 3;
 }
 
 void ProductCreation::Behavior() {
     double StartTime = Time;
     double Service;
 
-    repeat:
-    if (Butcher.Busy()) {
-        Into(ButcherQueue);
-        Passivate();
-        goto repeat;
-    }
-    Seize(Butcher, 3);
+    Seize(Butcher);
 
     Enter(ProductFridge, Load);
 
@@ -225,8 +187,6 @@ void ProductCreation::Behavior() {
     Seize(SmokeHouse);
 
     Release(Butcher);
-    if (ButcherQueue.Length() > 0)
-        ButcherQueue.GetFirst()->Activate();
 
     unsigned int SmokedMeat = 0;
     while (CutteredMeat > SmokedMeat) {
@@ -275,7 +235,8 @@ int main(int argc, char *argv[]) {
         }
     }
 
-  Init(0,8*60*60*5);
+
+  Init(0,2*8*60*60);
    /* (new MeatStacking(40))->Activate();
         (new MeatStacking(40))->Activate();*/
 
@@ -286,9 +247,15 @@ int main(int argc, char *argv[]) {
     dobaObsluhy2.Output();
     dobaVSystemu.Output();
     Butcher.Output();
-    ButcherQueue.Output();
+    Cutter.Output();
+    CutterQueue.Output();
+    SmokeHouse.Output();
+    SmokeHouseQueue.Output();
+    SausageFiller.Output();
+    SausageFillerQueue.Output();
     MeatIntakeFridge.Output();
     MeatAgingFridge.Output();
+    ProductFridge.Output();
 
 
   return 0;
