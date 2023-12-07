@@ -5,6 +5,7 @@
 #include <simlib.h>
 #include "main.h"
 #include <getopt.h>
+#include <vector>
 
 Queue  ButcherQueue("Rada na reznika");
 Facility Butcher("Reznik");
@@ -24,30 +25,24 @@ Store MeatIntakeFridge("Lednice pro prijem masa", 5000);
 
 Store ProductFridge("Lednice pro hotove produkty", 5000);
 
-class Meat:public Process {
+int n = 50;
 
-  void Behavior()
-  {
-    Seize(Butcher);
-    Wait(2.7);
-    Release(Butcher);
-  }
-
-};
 
 class Generator:public Event{
 
- /*Generator::Generator(){
-   // Activate();
-  }*/
+public:
 
   void Behavior()
   {
-    auto meat = new Meat();
+    for(int i = 0; i < n; i++){
+    auto meat = new Meat(i);
 
   
-    meat->Activate(Exponential(11));
+    meat->Activate(Time);
+    }
   }
+
+  int n;
 
 };
 
@@ -64,7 +59,8 @@ int main(int argc, char *argv[]) {
                 abort();
         }
     }
-  Init(0, 100000);
+    
+  Init(0);
   (new Generator)->Activate();
   Run();
 
