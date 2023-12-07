@@ -5,7 +5,7 @@ Facility  Box("Box");
 Histogram Table("Table",0,25,20);
 
 class Customer : public Process { 
-  double Prichod;                 // atribute of each customer
+  double Prichod{};                 // atribute of each customer
   void Behavior() {               // --- behavoir specification ---
     Prichod = Time;               // incoming time
     Seize(Box);                   // start of service
