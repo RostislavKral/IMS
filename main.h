@@ -25,11 +25,13 @@ struct ProgramOptions {
 struct MachinesTiming {
     // in minutes
     unsigned int Cutter = 12;
-    int SmokeHouse[2] = {72, 165};
+    int SmokeHouse[2] = {72 * 60, 165 * 60};
 };
 
 struct SimulationParams {
     unsigned int product = 0;
+    bool working = false;
+    double totalTime = 0;
 };
 
 class MeatStacking : public Process {
@@ -81,9 +83,23 @@ public:
     unsigned int Load;
 
     // Konstruktor s explicitním zadáním zatížení
-    explicit ProductExpedition(unsigned int load);
+    explicit ProductExpedition();
 
     // Chování procesu
+    void Behavior();
+};
+
+class WorkingHours : public Process {
+public:
+    explicit WorkingHours();
+    // Chování procesu
+    void Behavior();
+};
+
+class Generator : public Event {
+public:
+    unsigned int Load;
+    explicit Generator(unsigned int load);
     void Behavior();
 };
 
