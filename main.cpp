@@ -7,14 +7,30 @@
 #include <getopt.h>
 #include <vector>
 #include <iostream>
+#include <cmath>
 
 MachinesTiming Timing;
 ProgramOptions Options;
 SimulationParams SimParams;
 
-Stat dobaObsluhy("Doba obsluhy na lince");
-Stat dobaObsluhy2("Doba obsluhy na lince2");
-Histogram dobaVSystemu("Celkova doba v systemu", 0, 40, 2);
+Stat dobaCelkem("Doba celkem");
+
+Stat dobaSkladani("Doba skladani");
+
+Stat dobaPripravy("Doba pripravy");
+
+Stat dobaZrani("Doba zrami");
+
+Stat dobaVyroby("Doba vyroby");
+Stat dobaKutrovani("Doba kutrovani");
+Stat dobaNarazeni("Doba narazeni");
+Stat dobaUzeni("Doba uzeni");
+
+Stat dobaBaleni("Doba baleni");
+
+Stat dobaExpedice("Doba expedice");
+
+Histogram dobaVSystemu("Celkova doba v systemu", 0, 40, 20);
 
 Facility Butcher("Reznik");
 
@@ -35,132 +51,105 @@ Store ProductFridge("Lednice pro hotove produkty", 5000);
 
 int n = 50;
 int finalProduct = 0;
+int workday = 0;
 
+
+WorkingHours::WorkingHours() {
+    Priority = 1;
+}
+
+void WorkingHours::Behavior() {
+    start:
+    SimParams.working = true;
+    workday++;
+    SimParams.totalTime = Time;
+
+    (new MeatStacking(120))->Activate();
+    dobaSkladani(Time - SimParams.totalTime);
+
+    double exp = Time;
+    (new ProductExpedition)->Activate();
+    dobaExpedice(Time - exp);
+
+    Wait(8 * 60 * 60);
+    SimParams.working = false;
+    Seize(Butcher);
+
+    Wait(16 * 60 * 60);
+    Release(Butcher);
+    // goto start;
+    // Activate(Time + Exponential(2));
+    (new WorkingHours)->Activate();
+}
 
 MeatStacking::MeatStacking(unsigned int intake) {
     Intake = intake;
     Activate();
-    Priority = 2;
+    Priority = 3;
 }
 
 void MeatStacking::Behavior() {
-    double tvstup = Time;
-    double obsluha;
-    test:
-    if (MeatIntakeFridge.Empty()) {
-        // Todo wait
-
-    }
     Enter(MeatIntakeFridge, Intake);
 
     Seize(Butcher);
-    Wait(10 * 60);
 
-    dobaObsluhy2(obsluha);
+    Wait(2.7 * Intake);
 
     Release(Butcher);
 
     ((new MeatPreparation(Intake))->Activate());
-
-    dobaVSystemu(Time - tvstup);
 }
 
 MeatPreparation::MeatPreparation(unsigned int load) {
     Load = load;
     Activate();
-    Priority = 3;
+    Priority = 4;
 }
 
 void MeatPreparation::Behavior() {
     double tvstup = Time;
-    double obsluha;
 
+    Seize(Butcher);
+
+    Leave(MeatIntakeFridge, Load);
     Enter(MeatAgingFridge, Load);
 
-    Seize(Butcher);
+    // zpracovani
     Wait(Exponential(30 * 60));
+    // presun do lednice
     Wait(20 * 60);
-    Release(Butcher);
 
+    Release(Butcher);
+    dobaPripravy(Time - tvstup);
+
+    tvstup = Time;
+    // zrani masa
     Wait(2 * 60 * 60 * 24);
 
-    dobaVSystemu(Time - tvstup);
+    dobaZrani(Time - tvstup);
     (new ProductCreation(Load))->Activate();
 }
-
-ProductPackaging::ProductPackaging(unsigned int load) {
-    Load = load;
-    Activate();
-    Priority = 5;
-}
-
-void ProductPackaging::Behavior() {
-    double tvstup = Time;
-    double obsluha;
-    Seize(Butcher);
-    Wait(30 * 60);
-    Wait(0.8 * Load * 1.2 * 60);
-
-
-    Release(Butcher);
-
-    //TODO: Expedition process
-    dobaVSystemu(Time - tvstup);
-}
-
-ProductExpedition::ProductExpedition(unsigned int load) {
-    Load = load;
-    Activate();
-    Priority = 1;
-}
-
-void ProductExpedition::Behavior() {
-    double tvstup = Time;
-    double obsluha;
-    Wait(Uniform(12 * 60 * 60, 72 * 60 * 60));
-    Seize(Butcher);
-    Wait(40 * 60);
-
-
-    Release(Butcher);
-    finalProduct += Load;
-    ProductFridge.Leave(ProductFridge.Used());
-    //TODO: Expedition process
-    dobaVSystemu(Time - tvstup);
-
-}
-
-
-class Generator : public Event {
-public:
-
-    void Behavior() {
-        for (int i = 0; i < n; i++) {
-            auto meat = new MeatStacking(40);
-
-
-            meat->Activate(Time);
-        }
-    }
-};
-
 
 ProductCreation::ProductCreation(unsigned int load) {
     Load = load;
     FinalLoad = 0;
     Activate();
-    Priority = 4;
+    Priority = 5;
 }
 
 void ProductCreation::Behavior() {
     double StartTime = Time;
-    double Service;
+    double ProcessTime = 0;
 
+    MeatIntakeFridge.Output();
     Seize(Butcher);
-    Leave(MeatIntakeFridge, Load);
+    Leave(MeatAgingFridge, Load);
     Enter(ProductFridge, Load);
 
+
+
     repeatCutter:
+    ProcessTime = Time;
     if (Cutter.Busy()) {
         Into(CutterQueue);
         Passivate();
@@ -179,7 +168,10 @@ void ProductCreation::Behavior() {
     if (CutterQueue.Length() > 0)
         CutterQueue.GetFirst()->Activate();
 
+
+
     repeatFiller:
+    ProcessTime = Time;
     if (SausageFiller.Busy()) {
         Into(SausageFillerQueue);
         Passivate();
@@ -193,34 +185,95 @@ void ProductCreation::Behavior() {
     Release(SausageFiller);
     if (SausageFillerQueue.Length() > 0)
         SausageFillerQueue.GetFirst()->Activate();
+    dobaNarazeni(Time - ProcessTime);
 
     // skladani do kose do udirny
     Wait(CutteredMeat * 0.05);
 
     repeatSmoke:
+    ProcessTime = Time;
     if (SmokeHouse.Busy()) {
         Into(SmokeHouseQueue);
         Passivate();
         goto repeatSmoke;
     }
-    Seize(SmokeHouse);
 
+    Seize(SmokeHouse);
     Release(Butcher);
 
     unsigned int SmokedMeat = 0;
+
+    // uzeni
     while (CutteredMeat > SmokedMeat) {
-        // uzeni
+        Seize(Butcher);
+        Wait(5*60);
+        Release(Butcher);
         Wait(Uniform(Timing.SmokeHouse[0], Timing.SmokeHouse[1]));
         SmokedMeat += (Options.SmokeHouseCapacity < (Load - SmokedMeat)) ?
                       Options.SmokeHouseCapacity :
                       (Load - SmokedMeat);
     }
-
     Release(SmokeHouse);
     if (SmokeHouseQueue.Length() > 0)
         SmokeHouseQueue.GetFirst()->Activate();
-    (new ProductPackaging(Load))->Activate();
+    dobaUzeni(Time - ProcessTime);
+
+    dobaVyroby(Time - StartTime);
+
+    (new ProductPackaging(Load * 0.8))->Activate();
 }
+
+ProductPackaging::ProductPackaging(unsigned int load) {
+    Load = load;
+    Activate();
+    Priority = 5;
+}
+
+void ProductPackaging::Behavior() {
+    Seize(Butcher);
+    // chlazeni
+    Wait(30 * 60);
+
+    //baleni
+    double tvstup = Time;
+    Wait(Load * 1.2 * 60);
+    dobaBaleni(Time - tvstup);
+
+    Release(Butcher);
+
+    dobaCelkem(Time - SimParams.totalTime);
+    dobaVSystemu(Time - SimParams.totalTime);
+}
+
+ProductExpedition::ProductExpedition() {
+    Activate();
+    Priority = 2;
+}
+
+void ProductExpedition::Behavior() {
+    Wait(Exponential(2 * 60 * 60));
+    Seize(Butcher);
+
+    Wait(40 * 60);
+
+    Release(Butcher);
+    finalProduct += ProductFridge.Used();
+    ProductFridge.Leave(ProductFridge.Used());
+}
+
+//Generator::Generator(unsigned int load) {
+//    Load = load;
+//}
+//
+//void Generator::Behavior() {
+//        for (int i = 0; i < n; i++) {
+//            auto meat = new MeatStacking(loa);
+//            meat->Activate(Time);
+//        }
+//    }
+//};
+
+
 
 int main(int argc, char *argv[]) {
     int c;
@@ -259,12 +312,29 @@ int main(int argc, char *argv[]) {
     /* (new MeatStacking(40))->Activate();
          (new MeatStacking(40))->Activate();*/
 
-    (new Generator)->Activate();
-    (new ProductExpedition(1 * 24 * 60 * 60))->Activate();
+    (new WorkingHours)->Activate();
+    // (new Generator)->Activate();
+
+    // (new ProductExpedition(1 * 24 * 60 * 60))->Activate();
     Run();
 
-    dobaObsluhy.Output();
-    dobaObsluhy2.Output();
+    dobaCelkem.Output();
+
+    dobaSkladani.Output();
+
+    dobaPripravy.Output();
+
+    dobaZrani.Output();
+
+    dobaVyroby.Output();
+    dobaKutrovani.Output();
+    dobaNarazeni.Output();
+    dobaUzeni.Output();
+
+    dobaBaleni.Output();
+
+    dobaExpedice.Output();
+
     dobaVSystemu.Output();
     Butcher.Output();
     Cutter.Output();
@@ -277,6 +347,7 @@ int main(int argc, char *argv[]) {
     MeatAgingFridge.Output();
     ProductFridge.Output();
     Print(finalProduct);
+    Print(workday);
 
     return 0;
 }
