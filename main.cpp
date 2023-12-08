@@ -46,11 +46,7 @@ MeatStacking::MeatStacking(unsigned int intake) {
 void MeatStacking::Behavior() {
     double tvstup = Time;
     double obsluha;
-    test:
-    if (MeatIntakeFridge.Empty()) {
-        // Todo wait
 
-    }
     Enter(MeatIntakeFridge, Intake);
 
     Seize(Butcher);
@@ -123,8 +119,8 @@ void ProductExpedition::Behavior() {
 
 
     Release(Butcher);
-    finalProduct += Load;
-   // ProductFridge.Leave(ProductFridge.Used());
+    finalProduct += ProductFridge.Used();
+    ProductFridge.Leave(ProductFridge.Used());
     //TODO: Expedition process
     dobaVSystemu(Time - tvstup);
 
@@ -256,12 +252,13 @@ int main(int argc, char *argv[]) {
 
 
 
-    Init(0, 5 * 24 * 60 * 60);
+    Init(0, 10* 24 * 60 * 60);
     /* (new MeatStacking(40))->Activate();
          (new MeatStacking(40))->Activate();*/
 
     (new Generator)->Activate();
-    (new ProductExpedition(1 * 24 * 60 * 60))->Activate();
+    for(int i = 0; i < 5; i++)
+    (new ProductExpedition(0))->Activate(1*24*60*60*i);
     Run();
 
     dobaObsluhy.Output();
