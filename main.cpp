@@ -128,7 +128,7 @@ void ProductExpedition::Behavior()
 
     Release(Butcher);
     finalProduct += Load;
-    ProductFridge.Leave(ProductFridge.Used());
+   // ProductFridge.Leave(ProductFridge.Used());
     //TODO: Expedition process
     dobaVSystemu(Time - tvstup);
 
@@ -260,7 +260,7 @@ int main(int argc, char *argv[]) {
     }
 
 
-  Init(0,2*8*60*60);
+  Init(0,100*8*60*60);
    /* (new MeatStacking(40))->Activate();
         (new MeatStacking(40))->Activate();*/
 
