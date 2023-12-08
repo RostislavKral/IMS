@@ -6,6 +6,7 @@
 #include "main.h"
 #include <getopt.h>
 #include <vector>
+#include <iostream>
 
 MachinesTiming Timing;
 ProgramOptions Options;
@@ -36,7 +37,6 @@ int n = 50;
 int finalProduct = 0;
 
 
-
 MeatStacking::MeatStacking(unsigned int intake) {
     Intake = intake;
     Activate();
@@ -54,7 +54,7 @@ void MeatStacking::Behavior() {
     Enter(MeatIntakeFridge, Intake);
 
     Seize(Butcher);
-    Wait(10*60);
+    Wait(10 * 60);
 
     dobaObsluhy2(obsluha);
 
@@ -71,19 +71,18 @@ MeatPreparation::MeatPreparation(unsigned int load) {
     Priority = 3;
 }
 
-void MeatPreparation::Behavior()
-{
-     double tvstup = Time;
+void MeatPreparation::Behavior() {
+    double tvstup = Time;
     double obsluha;
 
     Enter(MeatAgingFridge, Load);
 
     Seize(Butcher);
-    Wait(Exponential(30*60));
-    Wait(20*60);
+    Wait(Exponential(30 * 60));
+    Wait(20 * 60);
     Release(Butcher);
 
-    Wait(2*60*60*24);
+    Wait(2 * 60 * 60 * 24);
 
     dobaVSystemu(Time - tvstup);
     (new ProductCreation(Load))->Activate();
@@ -95,20 +94,18 @@ ProductPackaging::ProductPackaging(unsigned int load) {
     Priority = 5;
 }
 
-void ProductPackaging::Behavior()
-{
+void ProductPackaging::Behavior() {
     double tvstup = Time;
     double obsluha;
     Seize(Butcher);
-    Wait(30*60);
-    Wait(0.8*Load*1.2*60);
+    Wait(30 * 60);
+    Wait(0.8 * Load * 1.2 * 60);
 
 
     Release(Butcher);
 
     //TODO: Expedition process
     dobaVSystemu(Time - tvstup);
-    (new ProductExpedition(Load*0.8))->Activate();
 }
 
 ProductExpedition::ProductExpedition(unsigned int load) {
@@ -117,13 +114,12 @@ ProductExpedition::ProductExpedition(unsigned int load) {
     Priority = 1;
 }
 
-void ProductExpedition::Behavior()
-{
+void ProductExpedition::Behavior() {
     double tvstup = Time;
     double obsluha;
-    Wait(Uniform(12*60*60, 72*60*60));
+    Wait(Uniform(12 * 60 * 60, 72 * 60 * 60));
     Seize(Butcher);
-    Wait(40*60);
+    Wait(40 * 60);
 
 
     Release(Butcher);
@@ -135,18 +131,17 @@ void ProductExpedition::Behavior()
 }
 
 
-class Generator: public Event{
+class Generator : public Event {
 public:
 
-  void Behavior()
-  {
-    for(int i = 0; i < n; i++){
-    auto meat = new MeatStacking(40);
+    void Behavior() {
+        for (int i = 0; i < n; i++) {
+            auto meat = new MeatStacking(40);
 
 
-    meat->Activate(Time);
+            meat->Activate(Time);
+        }
     }
-  }
 };
 
 
@@ -162,7 +157,7 @@ void ProductCreation::Behavior() {
     double Service;
 
     Seize(Butcher);
-
+    Leave(MeatIntakeFridge, Load);
     Enter(ProductFridge, Load);
 
     repeatCutter:
@@ -177,8 +172,8 @@ void ProductCreation::Behavior() {
     while (CutteredMeat < Load) {
         Wait(Timing.Cutter);
         CutteredMeat += (Options.CutterCapacity < (Load - CutteredMeat)) ?
-                Options.CutterCapacity :
-                (Load - CutteredMeat);
+                        Options.CutterCapacity :
+                        (Load - CutteredMeat);
     }
     Release(Cutter);
     if (CutterQueue.Length() > 0)
@@ -203,7 +198,7 @@ void ProductCreation::Behavior() {
     Wait(CutteredMeat * 0.05);
 
     repeatSmoke:
-    if (SmokeHouse.Busy()){
+    if (SmokeHouse.Busy()) {
         Into(SmokeHouseQueue);
         Passivate();
         goto repeatSmoke;
@@ -215,10 +210,10 @@ void ProductCreation::Behavior() {
     unsigned int SmokedMeat = 0;
     while (CutteredMeat > SmokedMeat) {
         // uzeni
-        Wait(Uniform(Timing.SmokeHouse[0],Timing.SmokeHouse[1]));
+        Wait(Uniform(Timing.SmokeHouse[0], Timing.SmokeHouse[1]));
         SmokedMeat += (Options.SmokeHouseCapacity < (Load - SmokedMeat)) ?
-                        Options.SmokeHouseCapacity :
-                        (Load - SmokedMeat);
+                      Options.SmokeHouseCapacity :
+                      (Load - SmokedMeat);
     }
 
     Release(SmokeHouse);
@@ -260,11 +255,13 @@ int main(int argc, char *argv[]) {
     }
 
 
-  Init(0,100*8*60*60);
-   /* (new MeatStacking(40))->Activate();
-        (new MeatStacking(40))->Activate();*/
+
+    Init(0, 5 * 24 * 60 * 60);
+    /* (new MeatStacking(40))->Activate();
+         (new MeatStacking(40))->Activate();*/
 
     (new Generator)->Activate();
+    (new ProductExpedition(1 * 24 * 60 * 60))->Activate();
     Run();
 
     dobaObsluhy.Output();
@@ -282,5 +279,5 @@ int main(int argc, char *argv[]) {
     ProductFridge.Output();
     Print(finalProduct);
 
-  return 0;
+    return 0;
 }
