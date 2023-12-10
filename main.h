@@ -77,6 +77,17 @@ public:
     void Behavior();
 };
 
+class CutterProcess : public Process {
+public:
+    unsigned int Load;
+    // Konstruktor s explicitním zadáním zatížení
+    explicit CutterProcess(unsigned int load);
+
+    // Chování procesu
+    void Behavior();
+};
+
+
 
 class ProductExpedition : public Process {
 public:

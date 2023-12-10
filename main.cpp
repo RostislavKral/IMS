@@ -147,8 +147,6 @@ void ProductCreation::Behavior() {
     Leave(MeatAgingFridge, Load);
     Enter(ProductFridge, Load);
 
-
-
     repeatCutter:
     ProcessTime = Time;
     if (Cutter.Busy()) {
@@ -168,7 +166,7 @@ void ProductCreation::Behavior() {
     Release(Cutter);
     if (CutterQueue.Length() > 0)
         CutterQueue.GetFirst()->Activate();
-
+    dobaKutrovani(Time-ProcessTime);
 
 
     repeatFiller:
@@ -310,7 +308,7 @@ int main(int argc, char *argv[]) {
 
 
 
-    Init(0, 10* 24 * 60 * 60);
+    Init(0, 5* 24 * 60 * 60);
     /* (new MeatStacking(40))->Activate();
          (new MeatStacking(40))->Activate();*/
 
