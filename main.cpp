@@ -12,7 +12,7 @@
 double wdh = 0;
 double inProcess = 0;
 int inSmokeHouseTotal = 0;
-
+int inSmokeHouseActive = 0;
 MachinesTiming Timing;
 ProgramOptions Options;
 SimulationParams SimParams;
@@ -348,10 +348,11 @@ void SmokeHouseProcess::Behavior() {
     Seize(SmokeHouse[c]);
     Enter(Butcher, 1);
 
+    if (DEBUG) std::cerr << "Butcher IN SMOKE " << Time << std::endl;
+
     // pouzivanych udiren
     inSmokeHouseNum++;
-
-    if (DEBUG) std::cerr << "Butcher IN SMOKE " << Time << std::endl;
+    inSmokeHouseActive += Todo;
 
     // presun do udirny
     Wait(5*60);
@@ -381,6 +382,9 @@ void SmokeHouseProcess::Behavior() {
     // Uvolneni
     Release(SmokeHouse[c]);
     Leave(Butcher, 1);
+
+    inSmokeHouseActive -= Todo;
+    inSmokeHouseNum--;
 
     dobaVSystemuHist(Time - in);
 
@@ -479,13 +483,13 @@ void ProductCreation::Behavior() {
     Leave(Butcher, 1);
     if (DEBUG) std::cerr << "Butcher OUT " << Time << std::endl;
 
-    unsigned int inSmokeHouse = 0;
+    unsigned int inSmokeHouseLocal = 0;
     inSmokeHouseTotal += Load;
     for (int i = 0; i < std::ceil((Load*1.0) / (Options.SmokeHouseCapacity*1.0)); ++i) {
-        int todo = (Options.SmokeHouseCapacity < (Load - inSmokeHouse)) ?
+        int todo = (Options.SmokeHouseCapacity < (Load - inSmokeHouseLocal)) ?
                    Options.SmokeHouseCapacity :
-                   (Load - inSmokeHouse);
-        inSmokeHouse += todo;
+                   (Load - inSmokeHouseLocal);
+        inSmokeHouseLocal += todo;
         (new SmokeHouseProcess(todo, Load))->Activate();
     }
     Into(Q3);
@@ -651,7 +655,7 @@ int main(int argc, char *argv[]) {
     ProductFridge.Output();
 
     std::cout << "Stav simulace: " << (error ? "Chyba" : "OK") << std::endl
-    << "Kontrolni soucet: " << workday*INPUT << " Check: " << ((ProductFridge.Used()*1.0 + finalProduct) / 80 * 100) + MeatAgingFridge.Used() + MeatIntakeFridge.Used() + inProcess << " V udirne: " << inSmokeHouseTotal << std::endl
+    << "Kontrolni soucet: " << workday*INPUT << " Check: " << ((ProductFridge.Used()*1.0 + finalProduct) / 80 * 100) + MeatAgingFridge.Used() + MeatIntakeFridge.Used() + inProcess << " V udirne: " << inSmokeHouseActive << " Celkem k uzeni: "<< inSmokeHouseTotal << " pocet aktivnich udiren: "<< inSmokeHouseNum << std::endl
     << "Vyrobeno: " << ProductFridge.Used() + finalProduct << " Kg, Použito: " << (((ProductFridge.Used()*1.0 + finalProduct) / 80 * 100)) << " Kg Masa" << std::endl
     << "Expedovano: " << finalProduct << std::endl
     << "Pocet dni: " << workday << std::endl
