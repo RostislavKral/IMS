@@ -691,7 +691,7 @@ int main(int argc, char *argv[]) {
     << "Vyrobeno: " << ProductFridge.Used() + finalProduct << " Kg, Použito: " << (((ProductFridge.Used()*1.0 + finalProduct) / 80 * 100)) << " Kg Masa" << std::endl
     << "Expedovano: " << finalProduct << std::endl
     << "Pocet dni: " << workday << std::endl
-    << "Hodin denne cista prace bez cekani: " << std::setprecision(2) << wdh/workday/3600/pocetRezniku << "h/den" <<  std::endl
+    << "Hodin denne cista prace bez cekani pro 1 reznika: " << std::setprecision(2) << wdh/workday/3600/pocetRezniku << "h/den" <<  std::endl
     << "Prumerna doba 1 cyklus vyroby bez zrani a baleni: " << (totalVyrobaCustom*1.0)/3600/pocetCyklu << " h" << std::endl
     << "Prumerna doba vyroby 1KG bez zrani a baleni: " << (totalVyrobaCustom*1.0)/60/INPUT << " min" << std::endl;
     if (DEBUG) std::cerr << where << std::endl;
