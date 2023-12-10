@@ -1,4 +1,4 @@
-# Autor Lukáš Ježek xjezek19
+# Autor Lukáš Ježek xjezek19, Rostislav Král xkralr06
 
 CXX = g++
 CXXFLAGS = -std=c++11 -Wall -static-libstdc++
@@ -25,5 +25,5 @@ $(TARGET): $(OBJECTS) $(HEADERFILES)
 clean:
 	rm -f $(OBJECTS) $(TARGET)
 
-run:
+run: all
 	./$(TARGET)

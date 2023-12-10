@@ -1,5 +1,5 @@
 /**
- * Authors xkralr06 - Rostislav Kral, xjezek19 - Lukas Jezek
+ * @authors xkralr06 - Rostislav Kral, xjezek19 - Lukas Jezek
 */
 
 #include <simlib.h>
@@ -8,13 +8,6 @@
 #include <iostream>
 #include <cmath>
 #include <iomanip>
-
-#define pocetKutru 1
-#define pocetNarazek 1
-#define pocetUdiren 1
-#define INPUT 150
-#define pocetRezniku 1
-#define DEBUG false
 
 double wdh = 0;
 double inProcess = 0;
@@ -30,7 +23,7 @@ Stat dobaSkladani("Doba skladani");
 
 Stat dobaPripravy("Doba pripravy");
 
-Stat dobaZrani("Doba zrami");
+Stat dobaZrani("Doba zrani");
 
 Stat dobaVyroby("Doba vyroby");
 Stat dobaKutrovani("Doba kutrovani");
@@ -41,7 +34,7 @@ Stat dobaBaleni("Doba baleni");
 
 Stat dobaExpedice("Doba expedice");
 
-Histogram dobaVSystemu("Celkova doba v systemu", 0, 40, 20);
+Histogram dobaVSystemuHist("Celkova doba v systemu", 0, 40, 20);
 
 Queue Q1("cutter reset Queue");
 Queue Q2("filler reset Queue");
@@ -58,11 +51,11 @@ Facility SmokeHouse[pocetUdiren];
 Queue SausageFillerQueue("Fronta na narazecku");
 Facility SausageFiller[pocetNarazek];
 
-Store MeatIntakeFridge("Lednice pro prijem masa", 5000);
+Store MeatIntakeFridge("Lednice pro prijem masa", Options.MeatIntakeFridge * Options.MeatIntakeFridgeUsage);
 
-Store MeatAgingFridge("Lednice pro zrani", 3500);
+Store MeatAgingFridge("Lednice pro zrani", Options.MeatAgingFridge * Options.MeatAgingFridgeUsage);
 
-Store ProductFridge("Lednice pro hotove produkty", 5000);
+Store ProductFridge("Lednice pro hotove produkty", Options.ProductFridge * Options.ProductFridgeUsage);
 
 int finalProduct = 0;
 int workday = 0;
@@ -71,6 +64,7 @@ int FilledMeat = 0;
 int SmokedMeat = 0;
 int inSmokeHouseNum = 0;
 bool error = false;
+double totalVyrobaCustom = 0;
 std::string where;
 
 
@@ -142,6 +136,8 @@ void MeatStacking::Behavior() {
     if (DEBUG) std::cerr << "---- start stacking ---" << Time << std::endl;
     where = "stacking";
 
+    TotalTime = Time;
+
     Enter(Butcher, 1);
 
     if (DEBUG) std::cerr << "Butcher IN  2 " << Time << std::endl;
@@ -160,20 +156,24 @@ void MeatStacking::Behavior() {
     if (DEBUG) std::cerr << "Butcher OUT " << Time << std::endl;
 
     (new ProductExpedition)->Activate();
-    ((new MeatPreparation(Intake))->Activate());
+    ((new MeatPreparation(Intake, (Time - TotalTime)))->Activate());
+
+    dobaVSystemuHist(Time - TotalTime);
 
     if (DEBUG) std::cerr << "---- end stacking ---" << Time << std::endl;
 }
 
-MeatPreparation::MeatPreparation(unsigned int load) {
+MeatPreparation::MeatPreparation(unsigned int load, double vstup) {
     Load = load;
     Activate();
+    TotalTime = vstup;
     // Priority = 5;
 }
 
 void MeatPreparation::Behavior() {
     where = "preparation";
     double tvstup = Time;
+    double in = Time;
 
     Enter(Butcher);
 
@@ -199,21 +199,23 @@ void MeatPreparation::Behavior() {
     dobaPripravy(Time - tvstup);
     tvstup = Time;
 
+    TotalTime += Time - in;
     // zrani masa
     Wait(2 * 60 * 60 * 24);
 
     if (DEBUG) std::cerr << "---- end zrani ---" << Time << std::endl;
 
     dobaZrani(Time - tvstup);
+    dobaVSystemuHist(Time - in);
 
-    (new ProductCreation(Load))->Activate();
+    (new ProductCreation(Load, (TotalTime)))->Activate();
 }
 
-ProductCreation::ProductCreation(unsigned int load) {
+ProductCreation::ProductCreation(unsigned int load, double vstup) {
     Load = load;
     FinalLoad = 0;
     Activate();
-    // Priority = 6;
+    TotalTime = vstup;
 }
 
 CutterProcess::CutterProcess (unsigned int todo, unsigned int load) {
@@ -222,6 +224,8 @@ CutterProcess::CutterProcess (unsigned int todo, unsigned int load) {
 };
 
 void CutterProcess::Behavior() {
+    double in = Time;
+
     int c = -1;
     zpet:
     for (int i = 0; i < pocetKutru; ++i) {
@@ -263,6 +267,8 @@ void CutterProcess::Behavior() {
     Release(Cutter[c]);
     Leave(Butcher);
 
+    dobaVSystemuHist(Time - in);
+
     if (DEBUG) std::cerr << "Butcher OUT CutterProcess " << Time << std::endl;
 }
 
@@ -272,6 +278,8 @@ FillerProcess::FillerProcess (unsigned int todo, unsigned int load) {
 };
 
 void FillerProcess::Behavior() {
+    double in = Time;
+
     int c = -1;
     zpet:
     for (int i = 0; i < pocetNarazek; ++i) {
@@ -304,6 +312,8 @@ void FillerProcess::Behavior() {
     Leave(Butcher);
     Release(SausageFiller[c]);
 
+    dobaVSystemuHist(Time - in);
+
     if (DEBUG) std::cerr << "Butcher OUT " << Time << std::endl;
 
     if (SausageFillerQueue.Length() > 0)
@@ -317,6 +327,8 @@ SmokeHouseProcess::SmokeHouseProcess (unsigned int todo, unsigned int load) {
 };
 
 void SmokeHouseProcess::Behavior() {
+    double in = Time;
+
     int c = -1;
     zpet:
     for (int i = 0; i < pocetUdiren; ++i) {
@@ -369,6 +381,8 @@ void SmokeHouseProcess::Behavior() {
     // Uvolneni
     Release(SmokeHouse[c]);
     Leave(Butcher, 1);
+
+    dobaVSystemuHist(Time - in);
 
     if (DEBUG) std::cerr << "Butcher OUT " << Time << std::endl;
 
@@ -494,8 +508,6 @@ void ProductCreation::Behavior() {
     Enter(Butcher, 1);
     if (DEBUG) std::cerr << "Butcher IN   " << Time << std::endl;
 
-    dobaVyroby(Time - StartTime);
-
     // Ulozeni do lednice, ztrana na hmotnosti 20%
     Enter(ProductFridge, Load*0.8);
 
@@ -506,6 +518,12 @@ void ProductCreation::Behavior() {
     for (int i = 0; i < pocetRezniku; ++i) {
         (new ProductPackaging(Load/pocetRezniku))->Activate();
     }
+
+    TotalTime += (Load*60*0.6);
+    TotalTime += (Time - StartTime);
+    totalVyrobaCustom += TotalTime;
+    dobaVyroby(TotalTime);
+    dobaVSystemuHist(Time - StartTime);
 }
 
 ProductPackaging::ProductPackaging(unsigned int load) {
@@ -532,7 +550,7 @@ void ProductPackaging::Behavior() {
 
     dobaCelkem(Time - SimParams.totalTime);
 
-    // dobaVSystemu(Time - SimParams.totalTime);
+    // dobaVSystemuHist(Time - SimParams.totalTime);
     if (DEBUG) std::cerr << "-------- End pack ---------"<< Time << std::endl;
 }
 
@@ -566,22 +584,8 @@ void ProductExpedition::Behavior() {
 
 
 int main(int argc, char *argv[]) {
-    int c;
 
-    // Zpracování vstupních přepínačů a argumentů při spuštění
-    while ((c = getopt(argc, argv, "i:o:")) != -1) {
-        switch (c) {
-            case 'i':
-                Options.Butchers = std::stoi(optarg);
-                break;
-            case 'o':
-                Options.Cutter = std::stoi(optarg);
-                break;
-            default:
-                abort();
-        }
-    }
-
+    // SetOutput("multiexp.dat");
     for (int i = 0; i < pocetUdiren; ++i) {
         std::string name = "Udirna ";
         name += std::to_string(i);
@@ -624,7 +628,7 @@ int main(int argc, char *argv[]) {
 
     dobaExpedice.Output();
 
-    dobaVSystemu.Output();
+    // dobaVSystemuHist.Output();
     Butcher.Output();
 
     for (const auto & i : Cutter) {
@@ -646,13 +650,13 @@ int main(int argc, char *argv[]) {
     MeatAgingFridge.Output();
     ProductFridge.Output();
 
-
     std::cout << "Stav simulace: " << (error ? "Chyba" : "OK") << std::endl
     << "Kontrolni soucet: " << workday*INPUT << " Check: " << ((ProductFridge.Used()*1.0 + finalProduct) / 80 * 100) + MeatAgingFridge.Used() + MeatIntakeFridge.Used() + inProcess << " V udirne: " << inSmokeHouseTotal << std::endl
-    << "Vyrobeno: " << ProductFridge.Used() + finalProduct << " Použito: " << (((ProductFridge.Used()*1.0 + finalProduct) / 80 * 100)) << " Kg Masa" << std::endl
+    << "Vyrobeno: " << ProductFridge.Used() + finalProduct << " Kg, Použito: " << (((ProductFridge.Used()*1.0 + finalProduct) / 80 * 100)) << " Kg Masa" << std::endl
     << "Expedovano: " << finalProduct << std::endl
     << "Pocet dni: " << workday << std::endl
-    << "Hodin denne reznik: " << std::setprecision(2) << wdh/workday/3600/pocetRezniku << "h/den" <<  std::endl;
+    << "Hodin denne reznik: " << std::setprecision(2) << wdh/workday/3600/pocetRezniku << "h/den" <<  std::endl
+    << "Prumerna doba vyroby bez zrani: " << totalVyrobaCustom/(workday-2)/3600 << std::endl;
     if (DEBUG) std::cerr << where << std::endl;
     return 0;
 }
