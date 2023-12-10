@@ -79,10 +79,10 @@ void WorkingHours::Behavior() {
     SimParams.working = true;
     workday++;
 
-    if (workday == 6) {
+    if (workday == WorkDays+1) {
         workday--;
+        if (DEBUG) std::cerr << "!!!!!!!!!!!!!EOS!!!!!!!!" << std::endl;
         Stop();
-        Wait(10*24*60*60);
     }
     if (DEBUG) std::cerr << "---------------NEW WD -----" << workday << "---------- Actual Time:" << Time << " - " << workday*86400 << "    " << Time << " - " << Time + 8*60*60 << std::endl;
 
@@ -640,7 +640,7 @@ int main(int argc, char *argv[]) {
     }
 
 
-    Init(0, 7 * 24 * 60 * 60);
+    Init(0, (WorkDays+1)* 24 * 60 * 60);
 
     (new WorkingHours)->Activate();
 

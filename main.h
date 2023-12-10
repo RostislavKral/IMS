@@ -11,7 +11,8 @@
 #define pocetUdiren 1
 #define INPUT 75
 #define pocetRezniku 1
-#define DEBUG true
+#define DEBUG false
+#define WorkDays 5
 
 struct ProgramOptions {
     unsigned int CutterCapacity = 25;
