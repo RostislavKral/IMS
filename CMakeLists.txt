@@ -4,5 +4,6 @@ project(IMS)
 set(CMAKE_CXX_STANDARD 14)
 
 add_executable(IMS main.cpp
-        main.h)
+        main.h
+)
 TARGET_LINK_LIBRARIES(${PROJECT_NAME} m simlib)

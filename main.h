@@ -10,8 +10,10 @@ struct ProgramOptions {
     unsigned int Butchers = 1;
     unsigned int Cutter = 1;
     unsigned int CutterCapacity = 25;
+    unsigned int Filler = 1;
+    unsigned int FillerCapacity = 50;
     unsigned int SmokeHouse = 1;
-    unsigned int SmokeHouseCapacity = 80;
+    unsigned int SmokeHouseCapacity = 1500;
     unsigned int MeatAgingFridge = 3500;
     unsigned int MeatAgingFridgeUsage = 10;
     unsigned int MeatIntakeFridge = 5000;
@@ -24,8 +26,9 @@ struct ProgramOptions {
 
 struct MachinesTiming {
     // in minutes
-    unsigned int Cutter = 12;
+    unsigned int Cutter = 12 * 60;
     int SmokeHouse[2] = {72 * 60, 165 * 60};
+    int SausageFiller = 48;
 };
 
 struct SimulationParams {
@@ -107,12 +110,30 @@ public:
     void Behavior();
 };
 
-class Generator : public Event {
+class CutterProcess : public Process {
 public:
-    unsigned int Load;
-    explicit Generator(unsigned int load);
+    int Todo, Load;
+    explicit CutterProcess(unsigned int todo, unsigned int load);
+    // Chování procesu
     void Behavior();
 };
+
+class FillerProcess : public Process {
+public:
+    int Todo, Load;
+    explicit FillerProcess(unsigned int todo, unsigned int load);
+    // Chování procesu
+    void Behavior();
+};
+
+class SmokeHouseProcess : public Process {
+public:
+    int Todo, Load;
+    explicit SmokeHouseProcess(unsigned int todo, unsigned int load);
+    // Chování procesu
+    void Behavior();
+};
+
 
 #define IMS_MAIN_H
 
