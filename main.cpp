@@ -103,7 +103,7 @@ void WorkingHours::Behavior() {
     if (DEBUG) std::cerr << "Butcher IN 1  " << Time << std::endl;
 
     defaultTime = defaultTime - (Time - timeT);
-    wdh += (Time - inTime);
+    // wdh += (Time - inTime);
 
     if (DEBUG) std::cerr << "WDS Butcher  workday: " << workday << " Time: " << Time  << std::endl;
 
@@ -139,6 +139,7 @@ void MeatStacking::Behavior() {
     TotalTime = Time;
 
     Enter(Butcher, 1);
+    double btime = Time;
 
     if (DEBUG) std::cerr << "Butcher IN  2 " << Time << std::endl;
 
@@ -152,6 +153,7 @@ void MeatStacking::Behavior() {
     Wait(2.7 * Intake);
 
     Leave(Butcher, 1);
+    wdh += (Time - btime);
 
     if (DEBUG) std::cerr << "Butcher OUT " << Time << std::endl;
 
@@ -176,6 +178,7 @@ void MeatPreparation::Behavior() {
     double in = Time;
 
     Enter(Butcher);
+    double btime = Time;
 
     if (DEBUG) std::cerr << "Butcher IN  3 " << Time << std::endl;
 
@@ -194,6 +197,7 @@ void MeatPreparation::Behavior() {
     Wait(20 * 60);
 
     Leave(Butcher);
+    wdh += (Time - btime);
     if (DEBUG) std::cerr << "Butcher OUT " << Time << std::endl;
 
     dobaPripravy(Time - tvstup);
@@ -242,6 +246,7 @@ void CutterProcess::Behavior() {
     }
     Seize(Cutter[c]);
     Enter(Butcher);
+    double btime = Time;
 
     if (DEBUG) std::cerr << "Butcher IN CutterProcess " << Time << std::endl;
 
@@ -266,6 +271,7 @@ void CutterProcess::Behavior() {
     // Uvolneni zdroju
     Release(Cutter[c]);
     Leave(Butcher);
+    wdh += (Time - btime);
 
     dobaVSystemuHist(Time - in);
 
@@ -294,6 +300,7 @@ void FillerProcess::Behavior() {
     // Zabrani zdroju
     Seize(SausageFiller[c]);
     Enter(Butcher);
+    double btime = Time;
 
     if (DEBUG) std::cerr << "Butcher IN 5  " << Time << std::endl;
 
@@ -311,6 +318,7 @@ void FillerProcess::Behavior() {
     // uvolneni
     Leave(Butcher);
     Release(SausageFiller[c]);
+    wdh += (Time - btime);
 
     dobaVSystemuHist(Time - in);
 
@@ -347,6 +355,7 @@ void SmokeHouseProcess::Behavior() {
     // alokace zdroju
     Seize(SmokeHouse[c]);
     Enter(Butcher, 1);
+    double btime = Time;
 
     if (DEBUG) std::cerr << "Butcher IN SMOKE " << Time << std::endl;
 
@@ -359,6 +368,7 @@ void SmokeHouseProcess::Behavior() {
 
     // uvolneni reznika, udirna pracuje sama
     Leave(Butcher,1);
+    wdh += (Time - btime);
 
     if (DEBUG) std::cerr << "Butcher OUT SMOKE " << Time << std::endl;
 
@@ -368,6 +378,7 @@ void SmokeHouseProcess::Behavior() {
     SmokedMeat += Todo;
 
     Enter(Butcher, 1);
+    btime = Time;
 
     // vytazeni kose z udirny
     Wait(5*60);
@@ -382,6 +393,7 @@ void SmokeHouseProcess::Behavior() {
     // Uvolneni
     Release(SmokeHouse[c]);
     Leave(Butcher, 1);
+    wdh += (Time - btime);
 
     inSmokeHouseActive -= Todo;
     inSmokeHouseNum--;
@@ -402,6 +414,8 @@ void ProductCreation::Behavior() {
     double StartTime = Time;
 
     Enter(Butcher);
+    double btime = Time;
+
     if (DEBUG) std::cerr << "Butcher IN   " << Time << std::endl;
 
     if (ProductFridge.Free() < Load) {
@@ -421,6 +435,8 @@ void ProductCreation::Behavior() {
 
     // Uvolneni reznika, pro moznost paralelismu
     Leave(Butcher);
+    wdh += (Time - btime);
+
     if (DEBUG) std::cerr << "Butcher OUT " << Time << std::endl;
 
     // Rozdeleni kutrovani podle kapacit stroju
@@ -442,6 +458,7 @@ void ProductCreation::Behavior() {
 
     // END BLOK kutrovani
     Enter(Butcher);
+    btime = Time;
 
     if (DEBUG) std::cerr << "Butcher IN   " << Time << std::endl;
 
@@ -452,6 +469,7 @@ void ProductCreation::Behavior() {
 
     // uvolneni pro moznost paralelismu
     Leave(Butcher);
+    wdh += (Time - btime);
     if (DEBUG) std::cerr << "Butcher OUT " << Time << std::endl;
 
     // Procesy narazeni
@@ -470,6 +488,7 @@ void ProductCreation::Behavior() {
     // END BLOK Narazeni
 
     Enter(Butcher);
+    btime = Time;
     if (DEBUG) std::cerr << "Butcher IN   " << Time << std::endl;
 
     // skladani do kose do udirny
@@ -481,6 +500,7 @@ void ProductCreation::Behavior() {
     ProcessTime = Time;
 
     Leave(Butcher, 1);
+    wdh += (Time - btime);
     if (DEBUG) std::cerr << "Butcher OUT " << Time << std::endl;
 
     unsigned int inSmokeHouseLocal = 0;
@@ -498,24 +518,28 @@ void ProductCreation::Behavior() {
     inSmokeHouseTotal -= Load;
 
     Enter(Butcher, 1);
+    btime = Time;
     if (DEBUG) std::cerr << "Butcher IN   " << Time << std::endl;
 
     // vytazeni z udiren
     Wait(5*60);
 
     Leave(Butcher);
+    wdh += (Time - btime);
     if (DEBUG) std::cerr << "Butcher OUT " << Time << std::endl;
 
     // chlazeni produktu
     Wait(30 * 60);
 
     Enter(Butcher, 1);
+    btime = Time;
     if (DEBUG) std::cerr << "Butcher IN   " << Time << std::endl;
 
     // Ulozeni do lednice, ztrana na hmotnosti 20%
     Enter(ProductFridge, Load*0.8);
 
     Leave(Butcher, 1);
+    wdh += (Time - btime);
     if (DEBUG) std::cerr << "Butcher OUT " << Time << std::endl;
 
     // paralelni baleni
@@ -523,7 +547,7 @@ void ProductCreation::Behavior() {
         (new ProductPackaging(Load/pocetRezniku))->Activate();
     }
 
-    TotalTime += (Load*60*0.6);
+    TotalTime += ((Load*36)/pocetRezniku);
     TotalTime += (Time - StartTime);
     totalVyrobaCustom += TotalTime;
     dobaVyroby(TotalTime);
@@ -541,6 +565,8 @@ void ProductPackaging::Behavior() {
     where = "pack";
 
     Enter(Butcher, 1);
+    double btime = Time;
+
     if (DEBUG) std::cerr << "Butcher IN   " << Time << std::endl;
 
     double tvstup = Time;
@@ -550,6 +576,7 @@ void ProductPackaging::Behavior() {
     dobaBaleni(Time - tvstup);
 
     Leave(Butcher, 1);
+    wdh += (Time - btime);
     if (DEBUG) std::cerr << "Butcher OUT " << Time << std::endl;
 
     dobaCelkem(Time - SimParams.totalTime);
@@ -568,6 +595,7 @@ void ProductExpedition::Behavior() {
     where = "exp";
 
     Enter(Butcher, 1);
+    double btime = Time;
     if (DEBUG) std::cerr << "Butcher IN   " << Time << std::endl;
 
     // Expeduji se vzdy vsechny vyrobky
@@ -578,6 +606,7 @@ void ProductExpedition::Behavior() {
     Wait(0.5*exped);
 
     Leave(Butcher, 1);
+    wdh += (Time - btime);
     if (DEBUG) std::cerr << "Butcher OUT " << Time << std::endl;
 
     finalProduct += exped;
@@ -655,12 +684,15 @@ int main(int argc, char *argv[]) {
     ProductFridge.Output();
 
     std::cout << "Stav simulace: " << (error ? "Chyba" : "OK") << std::endl
-    << "Kontrolni soucet: " << workday*INPUT << " Check: " << ((ProductFridge.Used()*1.0 + finalProduct) / 80 * 100) + MeatAgingFridge.Used() + MeatIntakeFridge.Used() + inProcess << " V udirne: " << inSmokeHouseActive << " Celkem k uzeni: "<< inSmokeHouseTotal << " pocet aktivnich udiren: "<< inSmokeHouseNum << std::endl
+    << "Kontrolni soucet: " << workday*INPUT << " Check: " << ((ProductFridge.Used()*1.0 + finalProduct) / 80 * 100) + MeatAgingFridge.Used() + MeatIntakeFridge.Used() + inProcess << std::endl
+    << " V udirne: " << inSmokeHouseActive << std::endl
+    << " Celkem k uzeni: "<< inSmokeHouseTotal << std::endl
+    << " pocet aktivnich udiren: "<< inSmokeHouseNum << std::endl
     << "Vyrobeno: " << ProductFridge.Used() + finalProduct << " Kg, Použito: " << (((ProductFridge.Used()*1.0 + finalProduct) / 80 * 100)) << " Kg Masa" << std::endl
     << "Expedovano: " << finalProduct << std::endl
     << "Pocet dni: " << workday << std::endl
     << "Hodin denne reznik: " << std::setprecision(2) << wdh/workday/3600/pocetRezniku << "h/den" <<  std::endl
-    << "Prumerna doba vyroby bez zrani: " << totalVyrobaCustom/(workday-2)/3600 << std::endl;
+    << "Prumerna doba vyroby bez zrani a baleni: " << totalVyrobaCustom/((workday-2))/3600 << std::endl;
     if (DEBUG) std::cerr << where << std::endl;
     return 0;
 }

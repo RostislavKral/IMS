@@ -8,7 +8,7 @@
 
 #define pocetKutru 2
 #define pocetNarazek 2
-#define pocetUdiren 1
+#define pocetUdiren 10
 #define INPUT 400
 #define pocetRezniku 2
 #define DEBUG true
