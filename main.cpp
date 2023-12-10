@@ -65,6 +65,7 @@ int SmokedMeat = 0;
 int inSmokeHouseNum = 0;
 bool error = false;
 double totalVyrobaCustom = 0;
+int pocetCyklu = 0;
 std::string where;
 
 
@@ -550,6 +551,7 @@ void ProductCreation::Behavior() {
     TotalTime += ((Load*36)/pocetRezniku);
     TotalTime += (Time - StartTime);
     totalVyrobaCustom += TotalTime;
+    pocetCyklu++;
     dobaVyroby(TotalTime);
     dobaVSystemuHist(Time - StartTime);
 }
@@ -683,7 +685,12 @@ int main(int argc, char *argv[]) {
     MeatAgingFridge.Output();
     ProductFridge.Output();
 
-    std::cout << "Stav simulace: " << (error ? "Chyba" : "OK") << std::endl
+    std::string state;
+    if (error) state = "Chyba";
+    else if (inSmokeHouseNum > 0) state = "OK - ! Udirna aktivni !";
+    else state = "OK";
+
+    std::cout << "Stav simulace: " <<state<< std::endl
     << "Kontrolni soucet: " << workday*INPUT << " Check: " << ((ProductFridge.Used()*1.0 + finalProduct) / 80 * 100) + MeatAgingFridge.Used() + MeatIntakeFridge.Used() + inProcess << std::endl
     << " V udirne: " << inSmokeHouseActive << std::endl
     << " Celkem k uzeni: "<< inSmokeHouseTotal << std::endl
@@ -691,8 +698,9 @@ int main(int argc, char *argv[]) {
     << "Vyrobeno: " << ProductFridge.Used() + finalProduct << " Kg, Použito: " << (((ProductFridge.Used()*1.0 + finalProduct) / 80 * 100)) << " Kg Masa" << std::endl
     << "Expedovano: " << finalProduct << std::endl
     << "Pocet dni: " << workday << std::endl
-    << "Hodin denne reznik: " << std::setprecision(2) << wdh/workday/3600/pocetRezniku << "h/den" <<  std::endl
-    << "Prumerna doba vyroby bez zrani a baleni: " << totalVyrobaCustom/((workday-2))/3600 << std::endl;
+    << "Hodin denne cista prace bez cekani 1 reznik: " << std::setprecision(2) << wdh/workday/3600/pocetRezniku << "h/den" <<  std::endl
+    << "Prumerna doba 1 cyklus vyroby bez zrani a baleni: " << (totalVyrobaCustom*1.0)/3600/pocetCyklu << " h" << std::endl
+    << "Prumerna doba vyroby 1KG bez zrani a baleni: " << (totalVyrobaCustom*1.0)/60/INPUT << " min" << std::endl;
     if (DEBUG) std::cerr << where << std::endl;
     return 0;
 }
