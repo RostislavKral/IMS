@@ -75,8 +75,6 @@ WorkingHours::WorkingHours() {
 }
 
 void WorkingHours::Behavior() {
-    double inTime = Time;
-
     SimParams.working = true;
     workday++;
 
@@ -92,10 +90,10 @@ void WorkingHours::Behavior() {
     (new MeatStacking((INPUT)))->Activate();
     dobaSkladani(Time - SimParams.totalTime);
 
-    Wait(8 * 60 * 60);
+    Wait(WorkDayHours * 60 * 60);
     SimParams.working = false;
 
-    double defaultTime = 16 * 60 * 60;
+    double defaultTime = (24-WorkDayHours) * 60 * 60;
     double timeT = Time;
 
     if (DEBUG) std::cerr << " @@@ konec smeny t: " << Time<< std::endl;
@@ -161,6 +159,7 @@ void MeatStacking::Behavior() {
 
     if (DEBUG) std::cerr << "Butcher OUT " << Time << std::endl;
 
+    dobaSkladani(Time - TotalTime);
     (new ProductExpedition)->Activate();
     ((new MeatPreparation(Intake, (Time - TotalTime)))->Activate());
 
@@ -511,7 +510,7 @@ void ProductCreation::Behavior() {
     }
     Into(Q3);
     Passivate();
-    where = "Konec uzeni";
+    where = "Konec uzeni, probiha chlazeni";
     dobaUzeni(Time - ProcessTime);
     inSmokeHouseTotal -= Load;
 
