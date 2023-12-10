@@ -66,6 +66,7 @@ int inSmokeHouseNum = 0;
 bool error = false;
 double totalVyrobaCustom = 0;
 int pocetCyklu = 0;
+std::string errMsg;
 std::string where;
 
 
@@ -110,6 +111,7 @@ void WorkingHours::Behavior() {
 
     if (defaultTime <= 0) {
         std::cerr << "Prekracovani 24h cyklu" << std::endl;
+        errMsg = "Prekracovani 24h cyklu";
         error = true;
         Stop();
     };
@@ -146,6 +148,7 @@ void MeatStacking::Behavior() {
 
     if (MeatIntakeFridge.Free() < Intake) {
         std::cerr << "Nedostatečná kapacita vstupní lednice, konec simulace" << std::endl;
+        errMsg = "Nedostatečná kapacita vstupní lednice, konec simulace";
         error = true;
         Stop();
     }
@@ -185,6 +188,7 @@ void MeatPreparation::Behavior() {
 
     if (MeatAgingFridge.Free() < Load) {
         std::cerr << "Nedostatečná kapacita zrací lednice, ukončuji simulaci" << std::endl;
+        errMsg = "Nedostatečná kapacita zrací lednice, ukončuji simulaci";
         error = true;
         Stop();
     }
@@ -421,6 +425,7 @@ void ProductCreation::Behavior() {
 
     if (ProductFridge.Free() < Load) {
         std::cerr << "Malo mista v lednici produktů, konec simulace" << std::endl;
+        errMsg = "Malo mista v lednici produktů, konec simulace";
         error = true;
         Stop();
         Wait(100);
@@ -683,7 +688,7 @@ int main(int argc, char *argv[]) {
     else if ((((ProductFridge.Used()*1.0 + finalProduct) / 80 * 100) + MeatAgingFridge.Used() + MeatIntakeFridge.Used() + inProcess) != workday*INPUT) state = "Nestihnuta vyroba, konec v: " +where;
     else state = "OK";
 
-    std::cout << "Stav simulace: " <<state<< std::endl
+    std::cout << "Stav simulace: " <<state << "  " <<  errMsg << std::endl
     << "Kontrolni soucet: " << workday*INPUT << " Check: " << ((ProductFridge.Used()*1.0 + finalProduct) / 80 * 100) + MeatAgingFridge.Used() + MeatIntakeFridge.Used() + inProcess << std::endl
     << " V udirne: " << inSmokeHouseActive << std::endl
     << " Celkem k uzeni: "<< inSmokeHouseTotal << std::endl
