@@ -6,18 +6,18 @@
 
 #ifndef IMS_MAIN_H
 
-#define pocetKutru 1
-#define pocetNarazek 1
-#define pocetUdiren 1
-#define INPUT 75
-#define pocetRezniku 1
-#define DEBUG false
+#define pocetKutru 2
+#define pocetNarazek 2
+#define pocetUdiren 2
+#define INPUT 250
+#define pocetRezniku 2
+#define DEBUG true
 #define WorkDays 5
 
 struct ProgramOptions {
-    unsigned int CutterCapacity = 25;
+    unsigned int CutterCapacity = 35;
     unsigned int FillerCapacity = 50;
-    unsigned int SmokeHouseCapacity = 80;
+    unsigned int SmokeHouseCapacity = 130;
     unsigned int MeatAgingFridge = 3500;
     unsigned int MeatAgingFridgeUsage = 1;
     unsigned int MeatIntakeFridge = 5000;
